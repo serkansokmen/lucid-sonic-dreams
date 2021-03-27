@@ -196,8 +196,19 @@ class LucidSonicDream:
     motion_percussive = self.motion_percussive
     motion_harmonic = self.motion_harmonic
 
-    # Load audio signal data
-    wav, sr = librosa.load(self.song, offset=start, duration=duration)
+    # Load audio signal data. Now with dirty hax for common fps values.
+    if fps == 60:
+      # 60fps hack
+      sample_rate = 30720
+    elif fps == 30:
+      # 30fps hack
+      sample_rate = 15360
+    elif fps == 24:
+      # 24fps hack
+      sample_rate = 12288
+    else:
+      sample_rate = 22050
+    wav, sr = librosa.load(self.song, sr=sample_rate, offset=start, duration=duration)
     wav_motion = wav_pulse = wav_class = wav
     sr_motion = sr_pulse = sr_class = sr
 
