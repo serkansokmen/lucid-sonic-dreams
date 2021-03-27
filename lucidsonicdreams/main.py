@@ -10,7 +10,7 @@ from scipy.stats import truncnorm
 
 import torch
 import PIL
-from PIL import Image
+from PIL import Image, ImageEnhance
 import skimage.exposure
 import librosa
 import soundfile
@@ -22,11 +22,11 @@ from importlib import import_module
 from .helper_functions import * 
 from .sample_effects import *
 
+torch.backends.cudnn.benchmark = True
+
 def import_stylegan_torch():
-    # Clone Official StyleGAN2-ADA Repository
+    # Clone Official StyleGAN2-ADA-pytorch Repository
     if not os.path.exists('stylegan2'):
-      #pygit2.clone_repository('https://github.com/NVlabs/stylegan2-ada.git',
-      #                        'stylegan2')
         pygit2.clone_repository('https://github.com/NVlabs/stylegan2-ada-pytorch.git',
                               'stylegan2')
     # StyleGan2 imports
@@ -36,10 +36,10 @@ def import_stylegan_torch():
 
 
 def import_stylegan_tf():
-    print("Cloning tensorflow...")
+    print("Cloning old, tensorflow stylegan...")
     if not os.path.exists('stylegan2_tf'):
         pygit2.clone_repository('https://github.com/NVlabs/stylegan2-ada.git',
-                          'stylegan2_tf')
+                              'stylegan2_tf')
 
     #StyleGAN2 Imports
     sys.path.append("stylegan2_tf")
@@ -68,8 +68,8 @@ class LucidSonicDream:
                input_shape: int = None,
                num_possible_classes: int = None): 
 
-      # If style is a function, raise exception if function does not take 
-      # noise_batch or class_batch parameters
+    # If style is a function, raise exception if function does not take 
+    # noise_batch or class_batch parameters
     if callable(style):
      
         func_sig = list(inspect.getfullargspec(style))[0]
@@ -99,11 +99,11 @@ class LucidSonicDream:
     # some stylegan models cannot be converted to pytorch (wikiart)
     self.use_tf = style in ("wikiart",)
     if self.use_tf:
-        #import_stylegan_tf()
-        print("Cloning tensorflow...")
+        # import_stylegan_tf()
+        print("Cloning old, tensorflow stylegan...")
         if not os.path.exists('stylegan2_tf'):
             pygit2.clone_repository('https://github.com/NVlabs/stylegan2-ada.git',
-                              'stylegan2_tf')
+                                  'stylegan2_tf')
 
         #StyleGAN2 Imports
         sys.path.append("stylegan2_tf")
@@ -111,34 +111,25 @@ class LucidSonicDream:
         #import dnnlib as dnnlib
         #from dnnlib.tflib.tfutil import convert_images_to_uint8
         tflib = import_module("dnnlib.tflib.tfutil")
-        self.convert_images_to_uint8 = tflib.convert_images_to_uint8#import_module("dnnlib.tflib.tfutil", fromlist=["convert_images_to_uint8"])
+        self.convert_images_to_uint8 = tflib.convert_images_to_uint8 #import_module("dnnlib.tflib.tfutil", fromlist=["convert_images_to_uint8"])
         self.init_tf = tflib.init_tf #import_module("dnnlib.tflib.tfutil", fromlist=["init_tf"])
         self.init_tf()
-        #init_tf()
     else:
-        #import_stylegan_torch()
-        # Clone Official StyleGAN2-ADA Repository
+        # import_stylegan_torch()
+        # Clone Official StyleGAN2-ADA-pytorch Repository
         if not os.path.exists('stylegan2'):
-          #pygit2.clone_repository('https://github.com/NVlabs/stylegan2-ada.git',
-          #                        'stylegan2')
             pygit2.clone_repository('https://github.com/NVlabs/stylegan2-ada-pytorch.git',
                                   'stylegan2')
-        # StyleGan2 imports
+        # StyleGan2-ada-pytorch imports
         sys.path.append("stylegan2")
-        #import legacy
-        #import dnnlib
         self.dnnlib = import_module("dnnlib")
         self.legacy = import_module("legacy")
     
 
   def stylegan_init(self):
-    '''Initialize StyleGAN(2) weights'''
+    '''Initialise StyleGAN2-ada-pytorch weights'''
 
     style = self.style
-
-    # Initialize TensorFlow
-    #if self.use_tf:
-    #    init_tf() 
 
     # If style is not a .pkl file path, download weights from corresponding URL
     if '.pkl' not in style:
@@ -148,7 +139,7 @@ class LucidSonicDream:
       # Raise exception if style is not valid
       if style not in all_styles:  
         sys.exit('Style not valid. Call show_styles() to see all ' \
-        'valid styles, or upload your own .pkl file.')
+        'valid styles, or use your own .pkl file.')
 
       download_url = [model for model in all_models \
                       if model['name'].lower() == style][0]\
@@ -382,12 +373,12 @@ class LucidSonicDream:
     class_smooth_frames = self.class_smooth_seconds * fps
     motion_react = self.motion_react * 20 / fps
 
-    # Get number of noise vectors to initialize (based on speed_fpm)
+    # Get number of noise vectors to initialise (based on speed_fpm)
     num_init_noise = round(
         librosa.get_duration(self.wav, 
                              self.sr)/60*self.speed_fpm)
     
-    # If num_init_noise < 2, simply initialize the same 
+    # If num_init_noise < 2, simply initialise the same 
     # noise vector for all frames 
     if num_init_noise < 2:
 
@@ -397,11 +388,11 @@ class LucidSonicDream:
                         .astype(np.float32)[0]] * \
               len(self.spec_norm_class)
 
-    # Otherwise, initialize num_init_noise different vectors, and generate
+    # Otherwise, initialise num_init_noise different vectors, and generate
     # linear interpolations between these vectors
     else: 
 
-      # Initialize vectors
+      # initialise vectors
       init_noise = [self.truncation * \
                     truncnorm.rvs(-2, 2, 
                                   size=(self.batch_size, self.input_shape)) \
@@ -416,20 +407,20 @@ class LucidSonicDream:
                                        steps,
                                        len(self.spec_norm_class))
 
-    # Initialize lists of Pulse, Motion, and Class vectors
+    # initialise lists of Pulse, Motion, and Class vectors
     pulse_noise = []
     motion_noise = []
     self.class_vecs = []
 
-    # Initialize "base" vectors based on Pulse/Motion Reactivity values
+    # initialise "base" vectors based on Pulse/Motion Reactivity values
     pulse_base = np.array([self.pulse_react]*self.input_shape)
     motion_base = np.array([motion_react]*self.input_shape)
 
-    # Randomly initialize "update directions" of noise vectors
+    # Randomly initialise "update directions" of noise vectors
     self.motion_signs = np.array([random.choice([1,-1]) \
                                   for n in range(self.input_shape)])
 
-    # Randomly initialize factors based on motion_randomness
+    # Randomly initialise factors based on motion_randomness
     rand_factors = np.array([random.choice([1,1-self.motion_randomness]) \
                              for n in range(self.input_shape)])
 
@@ -439,7 +430,7 @@ class LucidSonicDream:
 
       # UPDATE NOISE # 
 
-      # Re-initialize randomness factors every 4 seconds
+      # Re-initialise randomness factors every 4 seconds
       if i % round(fps*4) == 0:
         rand_factors = np.array([random.choice([1, 1-self.motion_randomness]) \
                              for n in range(self.input_shape)])
@@ -497,13 +488,13 @@ class LucidSonicDream:
       
 
   def setup_effects(self):
-    '''Initializes effects to be applied to each frame'''
+    '''initialises effects to be applied to each frame'''
 
     self.custom_effects = self.custom_effects or []
     start = self.start
     duration = self.duration
 
-    # Initialize pre-made Contrast effect 
+    # initialise pre-made Contrast effect 
     if all(var is None for var in [self.contrast_audio, 
                                   self.contrast_strength,
                                   self.contrast_percussive]):
@@ -519,7 +510,7 @@ class LucidSonicDream:
                                   percussive = self.contrast_percussive)
       self.custom_effects.append(contrast)
 
-    # Initialize pre-made Flash effect
+    # initialise pre-made Flash effect
     if all(var is None for var in [self.flash_audio, 
                                   self.flash_strength,
                                   self.flash_percussive]):
@@ -535,7 +526,7 @@ class LucidSonicDream:
                                   percussive = self.flash_percussive)
       self.custom_effects.append(flash)
 
-    # Initialize Custom effects
+    # initialise Custom effects
     for effect in self.custom_effects:
       effect.audio = effect.audio or self.song
       effect.render_audio(start=start, 
@@ -608,10 +599,11 @@ class LucidSonicDream:
 
 
             # Save. Include leading zeros in file name to keep alphabetical order
+            # NR: Needs fixing - save to RAM not disk!
             max_frame_index = num_frame_batches * batch_size + batch_size
             file_name = str(image_index)\
                      .zfill(len(str(max_frame_index)))
-            final_image.save(os.path.join(self.frames_dir, file_name + '.png'))#, subsample=0, quality=95)
+            final_image.save(os.path.join(self.frames_dir, file_name + '.jpg'), quality=95) #, subsample=0, quality=95)
         
         del image_batch
         del noise_batch
@@ -620,7 +612,7 @@ class LucidSonicDream:
   def hallucinate(self,
                   file_name: str, 
                   output_audio: str = None,
-                  fps: int = 43, 
+                  fps: int = 30, 
                   resolution: int = None, 
                   start: float = 0, 
                   duration: float = None, 
@@ -693,7 +685,7 @@ class LucidSonicDream:
     self.flash_percussive = flash_percussive
     self.custom_effects = custom_effects 
 
-    # Initialize style
+    # initialise style
     if not self.style_exists:
 
       print('Preparing style...')
@@ -704,7 +696,7 @@ class LucidSonicDream:
       self.style_exists = True
 
     # If there are changes in any of the following parameters,
-    # re-initialize audio
+    # re-initialise audio
     cond_list = [(not hasattr(self, 'fps')) or (self.fps != fps),
                  (not hasattr(self, 'start')) or (self.start != start),
                  (not hasattr(self, 'duration')) or (self.duration != duration),
@@ -730,7 +722,7 @@ class LucidSonicDream:
       print('Preparing audio...')
       self.load_specs()
 
-    # Initialize effects
+    # initialise effects
     print('Loading effects...')
     self.setup_effects()
     
@@ -757,8 +749,11 @@ class LucidSonicDream:
 
     # Generate final video
     audio = mpy.AudioFileClip('tmp.wav', fps = self.sr*2)
+    #video = mpy.ImageSequenceClip(self.frames_dir, 
+    #                              fps=self.sr/self.frame_duration)
     video = mpy.ImageSequenceClip(self.frames_dir, 
-                                  fps=self.sr/self.frame_duration)
+                                  fps=self.fps)
+
     video = video.set_audio(audio)
     video.write_videofile(file_name,audio_codec='aac')
 
