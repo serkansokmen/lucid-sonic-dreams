@@ -196,11 +196,12 @@ class LucidSonicDream:
     motion_percussive = self.motion_percussive
     motion_harmonic = self.motion_harmonic
 
-    # Load audio signal data. Now with dirty hax for common fps values.
-    if 24<= fps <=50 :
+    # Load audio signal data. Now with dirty hax for rounded fps values!
+    if 24<= fps <=60 :
       # fps hack
       sample_rate = 512 * fps
     else:
+      # the default librosa sample rate
       sample_rate = 22050
     wav, sr = librosa.load(self.song, sr=sample_rate, offset=start, duration=duration)
     wav_motion = wav_pulse = wav_class = wav
@@ -225,14 +226,14 @@ class LucidSonicDream:
 
     # Load audio signal data for Pulse, Motion, and Class if provided
     if self.pulse_audio:
-      wav_pulse, sr_pulse = librosa.load(self.pulse_audio, offset=start, 
-                                         duration=duration)
+      wav_pulse, sr_pulse = librosa.load(self.pulse_audio, sr=sample_rate,
+                                        offset=start, duration=duration)
     if self.motion_audio:
-      wav_motion, sr_motion = librosa.load(self.motion_audio, offset=start, 
-                                           duration=duration)
+      wav_motion, sr_motion = librosa.load(self.motion_audio, sr=sample_rate,
+                                        offset=start, duration=duration)
     if self.class_audio:
-      wav_class, sr_class = librosa.load(self.class_audio, offset=start,
-                                         duration=duration)
+      wav_class, sr_class = librosa.load(self.class_audio, sr=sample_rate,
+                                        offset=start, duration=duration)
     
     # Calculate frame duration (i.e. samples per frame)
     frame_duration = int(sr/fps - (sr/fps % 64))
@@ -510,7 +511,7 @@ class LucidSonicDream:
       self.contrast_percussive = self.contrast_percussive or True
 
       contrast = EffectsGenerator(audio = self.contrast_audio, 
-                                  func = contrast_effect, 
+                                  func = contrast_effect,
                                   strength = self.contrast_strength, 
                                   percussive = self.contrast_percussive)
       self.custom_effects.append(contrast)
@@ -742,10 +743,17 @@ class LucidSonicDream:
     print('\n\nHallucinating... \n')
     self.generate_frames()
 
+    # Now with dirty hax for rounded fps values!
+    if 24<= fps <=60 :
+      # fps hack
+      sample_rate = 512 * fps
+    else:
+      sample_rate = 22050
+
     # Load output audio
     if output_audio:
-      wav_output, sr_output = librosa.load(output_audio, offset=start, 
-                                           duration=duration)
+      wav_output, sr_output = librosa.load(output_audio, sr=sample_rate,
+                                          offset=start, duration=duration)
     else:
       wav_output, sr_output = self.wav, self.sr
 
@@ -792,9 +800,12 @@ class EffectsGenerator:
 
   def render_audio(self, start, duration, n_mels, hop_length):
     '''Prepare normalized spectrogram of audio to be used for effect'''
+    
+    # Now with dirty hax for rounded fps values!
+    sample_rate = 30720
 
-    # Load spectrogram
-    wav, sr = librosa.load(self.audio, offset=start, duration=duration)
+    # Load spectrogram 
+    wav, sr = librosa.load(self.audio, sr=sample_rate, offset=start, duration=duration)
 
     # If percussive = True, decompose harmonic and percussive signals
     if self.percussive: 
