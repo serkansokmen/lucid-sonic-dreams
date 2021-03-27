@@ -9,7 +9,7 @@ Sample output can be found on [YouTube](https://www.youtube.com/watch?v=SDf7a28c
 
 ## Installation  
   
-This implementation has been teston on Python 3.9. It now uses the PyTorch implementation of StyleGAN2-ada, and works with Ampere cards.
+This implementation has been tested on Python 3.9. It now uses the PyTorch implementation of StyleGAN2-ada, and works with Ampere cards.
 
 To install:
 git clone this repo and change directory into your newly created directory:
