@@ -50,5 +50,5 @@ L = LucidSonicDream(song = 'song.mp3',
 
 L.hallucinate(file_name = 'song.mp4') 
 ```
-sg2-ada-pt-song-spleeter.py is an example with a variety of configuration options as befaults, based on the audio being split into 4 stems using spleeter - https://github.com/deezer/spleeter
+sg2-ada-pt-song-spleeter.py is an example with a variety of configuration options as defaults, based on the audio being split into 4 stems using spleeter - https://github.com/deezer/spleeter
 
