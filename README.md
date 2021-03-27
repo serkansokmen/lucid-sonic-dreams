@@ -2,13 +2,13 @@
 Lucid Sonic Dreams syncs GAN-generated visuals to music!
 
 By default, it uses [NVLabs StyleGAN2-ada-pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch).
-While it can use pre-trained models lifted from [Justin Pinkney's consolidated repository](https://github.com/justinpinkney/awesome-pretrained-stylegan2), 
+It can also use pre-trained models lifted from [Justin Pinkney's consolidated repository](https://github.com/justinpinkney/awesome-pretrained-stylegan2).
 
-Sample output can be found on [YouTube](https://youtu.be/l-nGC-ve7sI) and [Instagram](https://www.instagram.com/lucidsonicdreams/).
+Sample output can be found on [YouTube](https://www.youtube.com/watch?v=SDf7a28cSVs).
 
 ## Installation  
   
-This implementation has been teston on Python 3.6 and 3.7. This now uses the PyTorch implementation of StyleGAN2 and works with Ampere cards.
+This implementation has been teston on Python 3.9. It now uses the PyTorch implementation of StyleGAN2-ada, and works with Ampere cards.
 
 To install:
 git clone this repo and change directory into your newly created directory:
