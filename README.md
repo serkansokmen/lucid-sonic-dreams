@@ -16,21 +16,24 @@ This implementation has been tested on Python 3.9. It now uses the PyTorch imple
 To install:
 git clone this repo and change directory into your newly created directory:
 
-`git clone https://github.com/nerdyrodent/lucid-sonic-dreams.git`
-
-`cd lucid-sonic-dreams`
+```
+git clone https://github.com/nerdyrodent/lucid-sonic-dreams.git
+cd lucid-sonic-dreams
+```
 
 It is suggested that Anaconda or Miniconda be used to create a new, virtual Python environment with a name of your choice. For example:
 
-`conda create --name sonicstylegan-pt python=3.9`
-
-`conda activate sonicstylegan-pt`
+```
+conda create --name sonicstylegan-pt python=3.9
+conda activate sonicstylegan-pt
+```
 
 Install the packages required for both stylegan2-ada-pytorch and this repo:
 
-`pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html`
-
-`pip install click requests ninja imageio imageio-ffmpeg tqdm psutil scipy pyspng`
+```
+pip install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip install click requests ninja imageio imageio-ffmpeg tqdm psutil scipy pyspng
+```
 
 (Optional) If you already have stylegan2-ada-pytorch (recommended for training your own networks), create a symbolic link to it:
 
