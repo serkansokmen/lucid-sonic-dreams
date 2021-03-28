@@ -22,7 +22,13 @@ from importlib import import_module
 from .helper_functions import * 
 from .sample_effects import *
 
+import imageio
+
+# For speed
 torch.backends.cudnn.benchmark = True
+
+# Dirty global variable :)
+all_frames = []
 
 def import_stylegan_torch():
     # Clone Official StyleGAN2-ADA-pytorch Repository
@@ -262,7 +268,7 @@ class LucidSonicDream:
 
   def transform_classes(self):
     '''Transform/assign value of classes'''
-    print("Num classes of model: ", self.num_possible_classes)
+    print("Number of model classes: ", self.num_possible_classes)
     # If model does not use classes, simply return list of 0's
     if self.num_possible_classes == 0:
       self.classes = [0]*12
@@ -556,10 +562,11 @@ class LucidSonicDream:
         Gs_syn_kwargs = {'noise_mode': 'const'} # random, const, None
 
     # Set-up temporary frame directory
-    self.frames_dir = file_name.split('.mp4')[0] + '_frames'
-    if os.path.exists(self.frames_dir):
-        shutil.rmtree(self.frames_dir)
-    os.makedirs(self.frames_dir)
+    # Fixme: Save images to RAM
+    #self.frames_dir = file_name.split('.mp4')[0] + '_frames'
+    #if os.path.exists(self.frames_dir):
+    #    shutil.rmtree(self.frames_dir)
+    #os.makedirs(self.frames_dir)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -603,13 +610,14 @@ class LucidSonicDream:
             if resolution:
                 final_image = final_image.resize((resolution, resolution))
 
-
             # Save. Include leading zeros in file name to keep alphabetical order
-            # NR: Needs fixing - save to RAM not disk!
-            max_frame_index = num_frame_batches * batch_size + batch_size
-            file_name = str(image_index)\
-                     .zfill(len(str(max_frame_index)))
-            final_image.save(os.path.join(self.frames_dir, file_name + '.jpg'), quality=95) #, subsample=0, quality=95)
+            #max_frame_index = num_frame_batches * batch_size + batch_size
+            #file_name = str(image_index)\
+            #        .zfill(len(str(max_frame_index)))
+            #final_image.save(os.path.join(self.frames_dir, file_name + '.jpg'), quality=95) #, subsample=0, quality=95)
+            
+            # Dirty global varible hacks :)
+            all_frames.append(final_image)
         
         del image_batch
         del noise_batch
@@ -736,46 +744,42 @@ class LucidSonicDream:
     self.transform_classes()
 
     # Generate vectors
-    print('\n\nDoing math...\n')
+    print('\nDoing math...\n')
     self.generate_vectors()
 
     # Generate frames
-    print('\n\nHallucinating... \n')
+    print('\nHallucinating... \n')
     self.generate_frames()
-
-    # Now with dirty hax for rounded fps values!
-    if 24<= fps <=60 :
-      # fps hack
-      sample_rate = 512 * fps
-    else:
-      sample_rate = 22050
 
     # Load output audio
     if output_audio:
-      wav_output, sr_output = librosa.load(output_audio, sr=sample_rate,
-                                          offset=start, duration=duration)
+      wav_output, sr_output = librosa.load(output_audio, 
+                                  offset=start, duration=duration)
     else:
       wav_output, sr_output = self.wav, self.sr
+
+    # Write temporary movie file
+    print('\nGenerating movie...\n')
+    imageio.mimwrite('tmp.mp4', all_frames, quality=8, fps=self.sr/self.frame_duration)
 
     # Write temporary audio file
     soundfile.write('tmp.wav',wav_output, sr_output)
 
-    # Generate final video
+    # Mix audio & video
     audio = mpy.AudioFileClip('tmp.wav', fps = self.sr*2)
-    video = mpy.ImageSequenceClip(self.frames_dir, 
-                                  fps=self.sr/self.frame_duration)
-    #video = mpy.ImageSequenceClip(self.frames_dir, 
-    #                              fps=self.fps)
-
+    video = mpy.VideoFileClip('tmp.mp4')
+    #video = mpy.ImageSequenceClip(all_frames, fps=self.sr/self.frame_duration)
+   
     video = video.set_audio(audio)
     video.write_videofile(file_name,audio_codec='aac')
 
     # Delete temporary audio file
     os.remove('tmp.wav')
+    os.remove('tmp.mp4')
 
     # By default, delete temporary frames directory
-    if not save_frames: 
-      shutil.rmtree(self.frames_dir)
+    #if not save_frames: 
+    # shutil.rmtree(self.frames_dir)
 
 
 class EffectsGenerator:
@@ -802,6 +806,7 @@ class EffectsGenerator:
     '''Prepare normalized spectrogram of audio to be used for effect'''
     
     # Now with dirty hax for rounded fps values!
+    # Previous max ~40fps, this is for 60fps
     sample_rate = 30720
 
     # Load spectrogram 
