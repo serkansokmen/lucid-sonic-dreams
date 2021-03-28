@@ -5,6 +5,8 @@ By default, it uses [NVLabs StyleGAN2-ada-pytorch](https://github.com/NVlabs/sty
 It can also use pre-trained models lifted from [Justin Pinkney's consolidated repository](https://github.com/justinpinkney/awesome-pretrained-stylegan2), but
 these are untested.
 
+"save_frames" is no longer used as this version works in RAM and doesn't save frames to disk.
+
 Sample output can be found on [YouTube](https://www.youtube.com/watch?v=SDf7a28cSVs).
 
 ## Installation  
